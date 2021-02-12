@@ -18,8 +18,10 @@ EVAL_DATA_PATH = Path('./data/eval') #验证集路径
 TRAIN_DATA_PATH = Path('./data/train') #训练集路径
 BATCH_SIZE = 64 #批大小
 
-model = torchvision.models.alexnet(pretrained=False) #使用 alexnet
-model.fc = NN.Linear(4096, 5) #修改最后一层线性激活层为 5，以匹配数据集
+#model = torchvision.models.alexnet(pretrained=False) #使用 alexnet
+model = torchvision.models.resnet34(pretrained=False) #使用 resnet34
+#model.fc = NN.Linear(4096, 5) #修改最后一层线性激活层为 4096->5，以匹配数据集(alex)
+model.fc = NN.Linear(512, 5)   #修改最后一层线性激活层为 512->5，以匹配数据集(res)
 print(model)
 model = model.cuda()
 
@@ -83,7 +85,7 @@ optimizer = optim.SGD(model.parameters(), lr = 0.001, momentum = 0.9)
 
 
 #载入上次训练
-model.load_state_dict(torch.load("./chkpoint.bin"))
+#model.load_state_dict(torch.load("./chkpoint.bin"))
 
 #开始训练
 for epoch in range(0, 100):
@@ -108,7 +110,7 @@ for epoch in range(0, 100):
     print("Epoch done, evaluating:", epoch)
 
     if epoch % 15 == 0:
-        torch.save(model.state_dict(), "./chkpoint.bin") #每 15 epoch 保存一次
+        torch.save(model.state_dict(), "./chkpoint_res.bin") #每 15 epoch 保存一次
         model.eval() #测试
         with tqdm(eval_dataloader, unit="batch") as eepoch:
             for data, target in eepoch:
