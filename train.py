@@ -1,29 +1,29 @@
 import numpy as np
 import torch
+from torch.utils.data import Dataset, DataLoader
 import torch.nn.functional as F
 import torch.nn as NN
 import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
-from torchvision.transforms.functional import pad
 import torchvision.datasets as dsets
-from torch.utils.data import Dataset, DataLoader
+
 from pathlib import Path
 import os
-import datetime
 from tqdm import tqdm
 import numbers
 
-torch.cuda.set_device(0)
-EVAL_DATA_PATH = Path('./data/eval')
-TRAIN_DATA_PATH = Path('./data/train')
-BATCH_SIZE = 64
+torch.cuda.set_device(0) #使用 GPU
+EVAL_DATA_PATH = Path('./data/eval') #验证集路径
+TRAIN_DATA_PATH = Path('./data/train') #训练集路径
+BATCH_SIZE = 64 #批大小
 
-model = torchvision.models.alexnet(pretrained=False)
-model.fc = NN.Linear(4096, 5)
+model = torchvision.models.alexnet(pretrained=False) #使用 alexnet
+model.fc = NN.Linear(4096, 5) #修改最后一层线性激活层为 5，以匹配数据集
 print(model)
 model = model.cuda()
 
+# 把图像 padding 为正方形的函数和方法
 def get_padding(image):    
     w, h = image.size
     max_wh = np.max([w, h])
@@ -52,14 +52,13 @@ class NewPad(object):
         Returns:
             PIL Image: Padded image.
         """
-        return pad(img, get_padding(img), self.fill, self.padding_mode)
+        return transforms.functional.pad(img, get_padding(img), self.fill, self.padding_mode)
     
     def __repr__(self):
         return self.__class__.__name__ + '(padding={0}, fill={1}, padding_mode={2})'.\
             format(self.fill, self.padding_mode)
 
-
-
+#图像预处理，使用了随机灰阶，缩放，随机旋转等数据增强方法
 transform = transforms.Compose([
 #    transforms.ColorJitter(brightness = 0.5),
     transforms.RandomGrayscale(p=0.9),
@@ -71,39 +70,46 @@ transform = transforms.Compose([
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.229, 0.224, 0.225)), #R,G,B每层的归一化用到的均值和方差
 ])
 
+#定义训练和验证集 和 dataloader
 eval_dataset = dsets.ImageFolder(EVAL_DATA_PATH,transform = transform)
 train_dataset = dsets.ImageFolder(TRAIN_DATA_PATH,transform = transform)
 
 eval_dataloader = DataLoader(eval_dataset ,batch_size = BATCH_SIZE, shuffle=True)
 train_dataloader = DataLoader(train_dataset ,batch_size = BATCH_SIZE, shuffle=True)
 
-
+#使用交叉熵为 loss，使用 SGD 优化方法
 criterion = NN.CrossEntropyLoss()
 optimizer = optim.SGD(model.parameters(), lr = 0.001, momentum = 0.9)
 
+
+#载入上次训练
+model.load_state_dict(torch.load("./chkpoint.bin"))
+
+#开始训练
 for epoch in range(0, 100):
     model.train()
-    with tqdm(train_dataloader, unit="batch") as tepoch:
+    with tqdm(train_dataloader, unit="batch") as tepoch: #进度条
         for data, target in tepoch:
             tepoch.set_description(f"Epoch {epoch}")
-            data, target = data.cuda(), target.cuda()
-            optimizer.zero_grad()
-            output = model(data)
-            predictions = output.argmax(dim=1, keepdim=True).squeeze()
-            loss = criterion(output, target)
-            correct = (predictions == target).sum().item()
-            accuracy = correct / BATCH_SIZE
-            
-            loss.backward()
-            optimizer.step()
+            data, target = data.cuda(), target.cuda() #数据载入 GPU
 
+            optimizer.zero_grad() #梯度归零
+            output = model(data) #前向计算
+            loss = criterion(output, target) #计算 loss
+            loss.backward() #反向传播
+            optimizer.step() #优化器向下走一步
+
+            predictions = output.argmax(dim=1, keepdim=True).squeeze() #预测
+            correct = (predictions == target).sum().item() #统计预测正确数
+            accuracy = correct / BATCH_SIZE #计算准确度
+            
             tepoch.set_postfix(loss=loss.item(), accuracy=100. * accuracy)
 
     print("Epoch done, evaluating:", epoch)
 
     if epoch % 15 == 0:
-        torch.save(model.state_dict(), "./" + datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + ".bin")
-        model.eval()
+        torch.save(model.state_dict(), "./chkpoint.bin") #每 15 epoch 保存一次
+        model.eval() #测试
         with tqdm(eval_dataloader, unit="batch") as eepoch:
             for data, target in eepoch:
                 eepoch.set_description(f"Epoch {epoch}")
