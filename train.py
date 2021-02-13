@@ -85,7 +85,7 @@ optimizer = optim.SGD(model.parameters(), lr = 0.001, momentum = 0.9)
 
 
 #载入上次训练
-#model.load_state_dict(torch.load("./chkpoint.bin"))
+model.load_state_dict(torch.load("./chkpoint_res.bin"))
 
 #开始训练
 for epoch in range(0, 100):
