@@ -2,12 +2,13 @@
 ## 关于
 此项目意在使用 CNN 进行物体识别，数据集为危险物品的 X 光透射照片，如 🔫，✂️，🔧，🔪 等。如下所示
 <center class="half">
-![1.6](https://github.com/neoncloud/cnn_object_detection_project/blob/main/media/16118317390713/1.6.jpg)![3.29](https://github.com/neoncloud/cnn_object_detection_project/blob/main/media/16118317390713/3.29.jpg)
+![1.6](https://github.com/neoncloud/cnn_object_detection_project/blob/main/media/16118317390713/1.6.jpg)
+![3.29](https://github.com/neoncloud/cnn_object_detection_project/blob/main/media/16118317390713/3.29.jpg)
 </center>
 
 
 
-##进度 & 食用方法
+## 进度 & 食用方法
 目前已经使用 torch 自带的 ResNet34 和 AlexNet 训练出了两个模型（chkpoint.bin），效果拔群。
 
 运行 train.py 可以开始训练，若不提供 chkpoint.bin（不继续训练）则需要注释掉第 88 行。环境和依赖啥的自己解决咯。
