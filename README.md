@@ -2,8 +2,8 @@
 ## 关于
 此项目意在使用 CNN 进行物体识别，数据集为危险物品的 X 光透射照片，如 🔫，✂️，🔧，🔪 等。如下所示
 
-![1.6](github.com/neoncloud/cnn_object_detection_project/blob/main/media/16118317390713/1.6.jpg)
-![3.29](github.com/neoncloud/cnn_object_detection_project/blob/main/media/16118317390713/3.29.jpg)
+![1.6](https://github.com/neoncloud/cnn_object_detection_project/raw/main/media/16118317390713/1.6.jpg)
+![3.29](https://github.com/neoncloud/cnn_object_detection_project/raw/main/media/16118317390713/3.29.jpg)
 
 
 
