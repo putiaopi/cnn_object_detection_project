@@ -4,77 +4,28 @@ from torch.utils.data import Dataset, DataLoader
 import torch.nn.functional as F
 import torch.nn as NN
 import torch.optim as optim
+
 import torchvision
-import torchvision.transforms as transforms
 import torchvision.datasets as dsets
 
 from pathlib import Path
 import os
 from tqdm import tqdm
-import numbers
+
+import preprocessing
 
 torch.cuda.set_device(0) #使用 GPU
 EVAL_DATA_PATH = Path('./data/eval') #验证集路径
 TRAIN_DATA_PATH = Path('./data/train') #训练集路径
 BATCH_SIZE = 64 #批大小
 
-#model = torchvision.models.alexnet(pretrained=False) #使用 alexnet
-model = torchvision.models.resnet34(pretrained=False) #使用 resnet34
-#model.fc = NN.Linear(4096, 5) #修改最后一层线性激活层为 4096->5，以匹配数据集(alex)
-model.fc = NN.Linear(512, 5)   #修改最后一层线性激活层为 512->5，以匹配数据集(res)
-print(model)
+from model import model
 model = model.cuda()
-
-# 把图像 padding 为正方形的函数和方法
-def get_padding(image):    
-    w, h = image.size
-    max_wh = np.max([w, h])
-    h_padding = (max_wh - w) / 2
-    v_padding = (max_wh - h) / 2
-    l_pad = h_padding if h_padding % 1 == 0 else h_padding+0.5
-    t_pad = v_padding if v_padding % 1 == 0 else v_padding+0.5
-    r_pad = h_padding if h_padding % 1 == 0 else h_padding-0.5
-    b_pad = v_padding if v_padding % 1 == 0 else v_padding-0.5
-    padding = (int(l_pad), int(t_pad), int(r_pad), int(b_pad))
-    return padding
-
-class NewPad(object):
-    def __init__(self, fill=0, padding_mode='constant'):
-        assert isinstance(fill, (numbers.Number, str, tuple))
-        assert padding_mode in ['constant', 'edge', 'reflect', 'symmetric']
-
-        self.fill = fill
-        self.padding_mode = padding_mode
-        
-    def __call__(self, img):
-        """
-        Args:
-            img (PIL Image): Image to be padded.
-
-        Returns:
-            PIL Image: Padded image.
-        """
-        return transforms.functional.pad(img, get_padding(img), self.fill, self.padding_mode)
-    
-    def __repr__(self):
-        return self.__class__.__name__ + '(padding={0}, fill={1}, padding_mode={2})'.\
-            format(self.fill, self.padding_mode)
-
-#图像预处理，使用了随机灰阶，缩放，随机旋转等数据增强方法
-transform = transforms.Compose([
-#    transforms.ColorJitter(brightness = 0.5),
-    transforms.RandomGrayscale(p=0.9),
-    NewPad(padding_mode = "symmetric"),
-    transforms.Resize(size = (128,128)),
-    transforms.RandomHorizontalFlip(),  #图像一半的概率翻转，一半的概率不翻转
-    transforms.RandomRotation((-45, 45)), #随机旋转
-    transforms.ToTensor(),
-    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.229, 0.224, 0.225)), #R,G,B每层的归一化用到的均值和方差
-])
+print(model)
 
 #定义训练和验证集 和 dataloader
-eval_dataset = dsets.ImageFolder(EVAL_DATA_PATH,transform = transform)
-train_dataset = dsets.ImageFolder(TRAIN_DATA_PATH,transform = transform)
+eval_dataset = dsets.ImageFolder(EVAL_DATA_PATH,transform = preprocessing.transform)
+train_dataset = dsets.ImageFolder(TRAIN_DATA_PATH,transform = preprocessing.transform)
 
 eval_dataloader = DataLoader(eval_dataset ,batch_size = BATCH_SIZE, shuffle=True)
 train_dataloader = DataLoader(train_dataset ,batch_size = BATCH_SIZE, shuffle=True)
@@ -91,7 +42,10 @@ model.load_state_dict(torch.load("./chkpoint_res.bin"))
 for epoch in range(0, 100):
     model.train()
     with tqdm(train_dataloader, unit="batch") as tepoch: #进度条
+        correct = 0
+        batch = 0
         for data, target in tepoch:
+            batch += 1
             tepoch.set_description(f"Epoch {epoch}")
             data, target = data.cuda(), target.cuda() #数据载入 GPU
 
@@ -99,27 +53,29 @@ for epoch in range(0, 100):
             output = model(data) #前向计算
             loss = criterion(output, target) #计算 loss
             loss.backward() #反向传播
-            optimizer.step() #优化器向下走一步
+            optimizer.step() #优化器梯度下降
 
             predictions = output.argmax(dim=1, keepdim=True).squeeze() #预测
-            correct = (predictions == target).sum().item() #统计预测正确数
-            accuracy = correct / BATCH_SIZE #计算准确度
+            correct += (predictions == target).sum().item() #统计预测正确数
+            accuracy = correct / (BATCH_SIZE * batch) #计算准确度
             
             tepoch.set_postfix(loss=loss.item(), accuracy=100. * accuracy)
 
-    print("Epoch done, evaluating:", epoch)
-
     if epoch % 15 == 0:
+        print("Epoch done, evaluating:", epoch)
         torch.save(model.state_dict(), "./chkpoint_res.bin") #每 15 epoch 保存一次
         model.eval() #测试
         with tqdm(eval_dataloader, unit="batch") as eepoch:
+            correct = 0
+            batch = 0
             for data, target in eepoch:
+                batch += 1
                 eepoch.set_description(f"Epoch {epoch}")
                 data, target = data.cuda(), target.cuda()
                 output = model(data)
                 predictions = output.argmax(dim=1, keepdim=True).squeeze()
-                correct = (predictions == target).sum().item()
-                accuracy = correct / BATCH_SIZE
+                correct += (predictions == target).sum().item()
+                accuracy = correct / (BATCH_SIZE * batch)
 
                 eepoch.set_postfix(loss=loss.item(), accuracy=100. * accuracy)
 
