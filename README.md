@@ -1,17 +1,17 @@
 # README
 ## 关于
-此项目意在使用 CNN 进行物体识别，数据集为危险物品的 X 光透射照片，如 🔫，✂️，🔧，🔪 等。如下所示
+此项目意在使用 CNN 进行物体识别，数据集为危险物品的 X 光透射照片，如 手枪，剪刀，扳手等。如下所示
 
 ![1.6](https://github.com/neoncloud/cnn_object_detection_project/raw/main/media/16118317390713/1.6.jpg)
 ![3.29](https://github.com/neoncloud/cnn_object_detection_project/raw/main/media/16118317390713/3.29.jpg)
 
 
 
-## 进度 & 食用方法
+## 进度与方法
 ### train.py
 目前已经使用 torch 自带的 ResNet34 和 AlexNet 训练出了两个模型（chkpoint.bin），效果拔群。
 
-运行 train.py 可以开始训练，若不提供 chkpoint.bin（不继续训练）则需要注释掉第 88 行。环境和依赖啥的自己解决咯。
+运行 train.py 可以开始训练，若不提供 chkpoint.bin（不继续训练）则需要注释掉第 88 行。环境依赖为torch通用环境。
 
 数据集放在 ./data 下面，目录结构如下
 
@@ -262,4 +262,4 @@ Epoch 45: 100%|█████████████████████�
 * [x] 改进训练脚本，设计命令行参数，分离出 config.py（超参数设置），和 network.py (网络定义部分)。
 * [x] 进行 fine tuning，测试其效果。
 * [ ] 改进数据增强，提高模型的正确率。
-* [ ] 自己设计一个网络并训练它，并希望上帝能让它收敛，还能有一个不错的正确率。
+* [ ] 自己设计一个网络并训练它，并希望还能有一个不错的正确率。
