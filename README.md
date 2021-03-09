@@ -1,19 +1,19 @@
 # README
-## 关于
-此项目意在使用 CNN 进行物体识别，数据集为危险物品的 X 光透射照片，如 手枪，剪刀，扳手等。如下所示
+## About
+This project uses CNN to classify dangerous goods like pistol、scissors and knife.
+
 
 ![1.6](https://github.com/neoncloud/cnn_object_detection_project/raw/main/media/16118317390713/1.6.jpg)
 ![3.29](https://github.com/neoncloud/cnn_object_detection_project/raw/main/media/16118317390713/3.29.jpg)
 
 
 
-## 进度与方法
+## Progress and method
 ### train.py
-目前已经使用 torch 自带的 ResNet34 和 AlexNet 训练出了两个模型（chkpoint.bin），效果拔群。
 
-运行 train.py 可以开始训练，若不提供 chkpoint.bin（不继续训练）则需要注释掉第 88 行。环境依赖为torch通用环境。
+Run train.py to start training. The environment depends on the torch general environment.
 
-数据集放在 ./data 下面，目录结构如下
+The data set is placed under ./data, and the directory structure is as follows
 
 ```
 ./data
@@ -60,7 +60,7 @@
 ```
 
 ### eval.py
-目前已经实现验证器，向程序传入图片路径和模型参数（chkpoint.bin）可以得到所训练模型的对于此图片的分类的预测。
+At present, a validator has been implemented, and the image path and model parameters (chkpoint.bin) can be passed into the program to obtain the prediction of the classification of the image by the trained model.
 ```
 usage: eval.py [-h] [-i IMG_PATH] [-m MODEL] [-v VERBOSE]
 
@@ -75,15 +75,15 @@ optional arguments:
   -v VERBOSE, --verbose VERBOSE
                         Show model structure and full output
 ```
-使用例：
+Example：
 ```
 python3 eval.py -i '/home/neoncloud/project/data/eval/3/3.3.jpg' -m '/home/neoncloud/project/chkpoint_res.bin'
 output: tensor(3, device='cuda:0')
 ```
-可见模型成功地对图片标签进行了预测，输入为 3 号类的图片，预测为 3。
+The model successfully predicted the image label. The input is the No. 3 image, and the prediction is 3.
 
 ### ft_train.py
-此脚本试图用预训练脚本进行 fine tuning。以 ResNet34 为例，其网络结构如下：
+This script attempts to fine-tune the pre-training script. Take ResNet34 as an example, its network structure is as follows：
 ```
 ResNet(
   (conv1): Conv2d(3, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
@@ -226,8 +226,8 @@ ResNet(
   (fc): Linear(in_features=512, out_features=5, bias=True)
 )
 ```
+The network consists of the following five layers
 
-宏观上，网络由
 * layer1
 * layer2
 * layer3
@@ -235,31 +235,30 @@ ResNet(
 * avgpool
 * fc
 
-五层网络构成，我们只训练 layer4、avgpool 和 fc 层，而固定前面的网络参数不动，在程序中设置了
+The project has a 5-layer network，We only train the layer4, avgpool and fc layers, and fix the previous network parameters.
 
 ```
-for param in model.parameters(): #先锁定网络的所有参数，后面来决定要训练的部分网络
+for param in model.parameters():
     param.requires_grad = False
 
-from itertools import chain #把后半截（layer4,avgpool,fc）的网络参数启动训练
+from itertools import chain 
 for param in chain(model.layer4.parameters(), model.avgpool.parameters(), model.fc.parameters()):
     param.requires_grad = True
 ```
 
-以单独训练后部网络参数。预训练参数于 torch 官网下载。
 
-对网络进行 fine tuning 能极大节省训练时间：程序仅仅在 45 个 epoch 后正确率便达到了 91.9%
+Fine tuning the network can greatly save training time: the program has a correct rate of 91.9% after only 45 epochs.
 ```
 Epoch done, evaluating: 45
 Epoch 45: 100%|████████████████████████████████████████████████████████████████| 53/53 [00:08<00:00,  6.25batch/s, accuracy=91.9, loss=0.0289]
 ```
-作为对比，从 0 开始训练至少需要 80 个 epoch 才能达到相同水平。
+For comparison, training from 0 requires at least 80 epochs to reach the same level.
 
 
 ## TODO
-* [x] 基本可用的训练脚本，包括数据集对象（继承自 ImageFolder 类），数据集加载器对象（继承自 dataloader），简单的数据集增强（Transform，包含 padding 为正方形，随机旋转等），使用 SGD 和 交叉熵，以及一个装逼的进度条。
-* [x] 设计一个友好的验证脚本（eval.py），从命令行中传入测试一个图片，并通过网络预测其标签。
-* [x] 改进训练脚本，设计命令行参数，分离出 config.py（超参数设置），和 network.py (网络定义部分)。
-* [x] 进行 fine tuning，测试其效果。
-* [ ] 改进数据增强，提高模型的正确率。
-* [ ] 自己设计一个网络并训练它，并希望还能有一个不错的正确率。
+* [x] Basic training scripts available, including data set objects (inherited from the ImageFolder class), data set loader objects (inherited from dataloader), simple data set enhancements (Transform, including padding as square, random rotation, etc.), using SGD and cross Entropy, and a progress bar pretending to be compelling.
+* [x] Improve the training script, design command line parameters, separate config.py (hyper parameter settings), and network.py (network definition part).
+* [x] Perform fine tuning to test its effect.
+* [ ] Improve data enhancement to increase the accuracy of the model.
+* [ ] Design a network by yourself and train it, and hope to have a good accuracy rate.
+
